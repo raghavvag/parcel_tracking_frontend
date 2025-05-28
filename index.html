@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Parcel Tracking System</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="dark-theme-fixes.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <div class="hero-section">
+        <div class="hero-content">
+            <h1>Track Your Parcels with Confidence</h1>
+            <p class="hero-description">Real-time tracking, secure delivery, and peace of mind with our advanced parcel tracking system.</p>
+            
+            <div class="hero-buttons">
+                <a href="login.html" class="nav-btn"><i class="fas fa-sign-in-alt"></i> Login</a>
+                <a href="signup.html" class="nav-btn"><i class="fas fa-user-plus"></i> Sign Up</a>
+            </div>
+              <div class="tracking-search">
+                <h3>Track Your Parcel</h3>
+                <form id="track-form" class="track-form">
+                    <input type="text" placeholder="Enter tracking number..." id="tracking-input">
+                    <button type="submit" class="track-btn"><i class="fas fa-search"></i> Track</button>
+                </form>
+                <div id="tracking-error" class="tracking-error" style="display: none; color: #e53935; margin-top: 10px; font-size: 14px;"></div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="features-section">
+        <div class="feature">
+            <i class="fas fa-map-marker-alt feature-icon"></i>
+            <h3>Real-Time Tracking</h3>
+            <p>Track your parcels in real-time with precise location updates.</p>
+        </div>
+        <div class="feature">
+            <i class="fas fa-shield-alt feature-icon"></i>
+            <h3>Secure Delivery</h3>
+            <p>End-to-end security for all your valuable shipments.</p>
+        </div>
+        <div class="feature">
+            <i class="fas fa-clock feature-icon"></i>
+            <h3>Timely Updates</h3>
+            <p>Get instant notifications about your parcel status.</p>
+        </div>
+    </div>
+    
+    <footer>
+        <p>&copy; 2025 Parcel Tracking System. All rights reserved.</p>
+    </footer>      <script>
+        document.getElementById('track-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const trackingNumber = document.getElementById('tracking-input').value.trim();
+            const trackingError = document.getElementById('tracking-error');
+            
+            // Hide any previous error messages
+            trackingError.style.display = 'none';
+            trackingError.textContent = '';
+            
+            if (trackingNumber) {
+                try {
+                    // Show loading state
+                    const trackBtn = document.querySelector('.track-btn');
+                    const originalBtnText = trackBtn.innerHTML;
+                    trackBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Searching...';
+                    trackBtn.disabled = true;
+                      // Make API call to your backend with the tracking ID
+                    const response = await fetch(`https://localhost:5001/api/Shipment/tracking/${trackingNumber}`);
+                    
+                    // Reset button state
+                    trackBtn.innerHTML = originalBtnText;
+                    trackBtn.disabled = false;
+                    
+                    if (response.status === 404) {
+                        // Display error message in the tracking-error div
+                        trackingError.textContent = 'No shipment found with this tracking number. Please check and try again.';
+                        trackingError.style.display = 'block';
+                        return;
+                    }
+                    
+                    if (!response.ok) {
+                        throw new Error(`Error ${response.status}: ${response.statusText}`);
+                    }
+                    
+                    const shipment = await response.json();
+                    
+                    // Log what we received from the API for debugging
+                    console.log('Shipment data received:', shipment);
+                    
+                    // Store the tracking result in sessionStorage for quick access on tracking page
+                    sessionStorage.setItem('lastTrackedShipment', JSON.stringify(shipment));
+                      // Redirect to the tracking page using the tracking ID from the URL
+                    // Add the source parameter to indicate this is from home page tracking
+                    window.location.href = `shipment-tracking.html?tracking=${trackingNumber}&source=homeTracking`;
+                } catch (error) {
+                    console.error('Error tracking shipment:', error);
+                    
+                    // Display error in the tracking-error div
+                    trackingError.textContent = 'Error connecting to the server. Please try again later.';
+                    trackingError.style.display = 'block';
+                    
+                    // Reset button state if not already done
+                    document.querySelector('.track-btn').innerHTML = '<i class="fas fa-search"></i> Track';
+                    document.querySelector('.track-btn').disabled = false;
+                }
+            } else {
+                // Display empty input error
+                trackingError.textContent = 'Please enter a tracking number';
+                trackingError.style.display = 'block';
+            }
+        });
+    </script>
+</body>
+</html>

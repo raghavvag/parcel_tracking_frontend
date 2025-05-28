@@ -1,0 +1,127 @@
+/* Dark theme fixes for better visibility */
+
+/* General text/background improvements */
+body {
+    color: var(--text-color);
+}
+
+/* Form styling improvements */
+select, input, textarea {
+    background-color: #2a2a2a;
+    color: var(--text-color);
+    border: 1px solid #444;
+    border-radius: 4px;
+}
+
+select:focus, input:focus, textarea:focus {
+    border-color: var(--accent-color);
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.3);
+}
+
+/* Better visibility for links */
+a {
+    color: var(--accent-color);
+    text-decoration: none;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+/* Table styling for dark theme */
+table {
+    background-color: var(--container-bg);
+    color: var(--text-color);
+    border-collapse: collapse;
+}
+
+th {
+    background-color: #2a2a2a;
+    color: var(--heading-color);
+    padding: 10px;
+    text-align: left;
+    border-bottom: 2px solid #444;
+}
+
+td {
+    padding: 10px;
+    border-bottom: 1px solid #444;
+}
+
+/* Status badges for consistent display across the site */
+.status-badge-delivered {
+    color: #43a047;
+    background-color: rgba(67, 160, 71, 0.2);
+    padding: 3px 8px;
+    border-radius: 4px;
+    display: inline-block;
+}
+
+.status-badge-transit {
+    color: #1976d2;
+    background-color: rgba(25, 118, 210, 0.2);
+    padding: 3px 8px;
+    border-radius: 4px;
+    display: inline-block;
+}
+
+.status-badge-pending {
+    color: #757575;
+    background-color: rgba(117, 117, 117, 0.2);
+    padding: 3px 8px;
+    border-radius: 4px;
+    display: inline-block;
+}
+
+/* Animation for smoother transitions */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.fade-in {
+    animation: fadeIn 0.3s ease-in;
+}
+
+/* Current location and status form styling */
+.current-location-section {
+    background-color: rgba(25, 118, 210, 0.1);
+    padding: 15px;
+    border-radius: 8px;
+    margin: 20px 0;
+    border-left: 4px solid #1976d2;
+}
+
+.current-location-section h3 {
+    margin-top: 0;
+    color: #1976d2;
+}
+
+.timeline-location {
+    color: #1976d2;
+    margin: 8px 0;
+    font-size: 0.9em;
+}
+
+.status-form-group {
+    margin-bottom: 15px;
+}
+
+.status-form-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+    color: var(--text-color);
+}
+
+#current-address-input {
+    padding: 8px;
+    margin-right: 10px;
+    background-color: #2a2a2a;
+    color: var(--text-color);
+    border: 1px solid #444;
+    border-radius: 4px;
+    width: 100%;
+    max-width: 300px;
+}

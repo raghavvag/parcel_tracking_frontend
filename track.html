@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Redirecting to Tracking</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #f5f5f5;
+            margin: 0;
+            padding: 0;
+        }
+        .redirect-container {
+            text-align: center;
+            padding: 30px;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            max-width: 90%;
+        }
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #2196f3;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="redirect-container">
+        <h2>Redirecting to Tracking Page</h2>
+        <div class="spinner"></div>
+        <p>Please wait while we redirect you to the shipment tracking page...</p>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Extract tracking ID from URL
+            const path = window.location.pathname;
+            let trackingId;
+            
+            // Handle paths like /track/PT-2505-OKX4G0
+            if (path.includes('/track/')) {
+                trackingId = path.split('/track/')[1];
+            } 
+            // Handle paths like /PT-2505-OKX4G0
+            else if (path.match(/\/[A-Z]{2}-\d{4}-[A-Z0-9]{5,6}$/)) {
+                trackingId = path.substring(path.lastIndexOf('/') + 1);
+            }
+            // Fallback to check if the whole path is a tracking ID
+            else if (path.match(/^\/[A-Z]{2}-\d{4}-[A-Z0-9]{5,6}$/)) {
+                trackingId = path.substring(1); // Remove leading slash
+            }
+            
+            if (trackingId) {
+                // Redirect to the tracking page with the extracted ID
+                window.location.href = `shipment-tracking.html?tracking=${trackingId}`;
+            } else {
+                // If no tracking ID found, redirect to main tracking page
+                console.error('No tracking ID found in URL:', path);
+                document.querySelector('.redirect-container').innerHTML = `
+                    <h2>Error Finding Tracking Information</h2>
+                    <p>We couldn't find a valid tracking number in the URL.</p>
+                    <p>Please verify your tracking number and try again.</p>
+                    <a href="index.html" style="display: inline-block; margin-top: 20px; padding: 10px 20px; background: #2196f3; color: white; text-decoration: none; border-radius: 4px;">
+                        Go to Homepage
+                    </a>
+                `;
+            }
+        });
+    </script>
+</body>
+</html>
