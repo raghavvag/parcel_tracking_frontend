@@ -17,7 +17,7 @@ async function trackShipment(trackingId) {
         
         // Handle patterns like "track/PT-2505-OKX4G0" or "/PT-2505-OKX4G0"
         if (cleanTrackingId.includes('/')) {
-            // Handle backend API URL pattern: https://localhost:5001/api/shipment/tracking/PT-2505-9B9TB5
+            // Handle backend API URL pattern: https://paracel-tracking-system.onrender.com/api/shipment/tracking/PT-2505-9B9TB5
             if (cleanTrackingId.toLowerCase().includes('/api/shipment/tracking/')) {
                 cleanTrackingId = cleanTrackingId.split('/api/shipment/tracking/').pop();
                 console.log('Extracted tracking ID from backend API URL:', cleanTrackingId);
@@ -44,18 +44,17 @@ async function trackShipment(trackingId) {
                 };
             }
         }        console.log('Fetching shipment with tracking ID:', cleanTrackingId);
-        
-        // Determine if we're running on GitHub Pages or locally
+          // Determine if we're running on GitHub Pages or locally
         const isGitHubPages = window.location.hostname === "raghavvag.github.io";
         const apiBaseUrl = isGitHubPages 
-            ? "https://your-deployed-backend-url.com" // Replace with your actual deployed backend URL
-            : "https://localhost:5001";
+            ? "https://paracel-tracking-system.onrender.com" // Deployed backend URL
+            : "https://paracel-tracking-system.onrender.com";
         
         // Always use the tracking endpoint for tracking IDs
         const response = await fetch(`${apiBaseUrl}/api/Shipment/tracking/${cleanTrackingId}`);
         
         // Log full URL for debugging
-        console.log(`Making API request to: https://localhost:5001/api/Shipment/tracking/${cleanTrackingId}`);
+        console.log(`Making API request to: ${apiBaseUrl}/api/Shipment/tracking/${cleanTrackingId}`);
         
         // Log response status for debugging
         console.log('API response status:', response.status);

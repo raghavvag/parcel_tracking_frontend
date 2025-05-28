@@ -13,7 +13,7 @@ document.getElementById('signupForm').addEventListener('submit', async function(
         // Log data being sent to the API for debugging
         console.log('Sending data to server:', { name, email, phoneNumber, password, role });
         
-        const response = await fetch('https://localhost:5001/api/User', {
+        const response = await fetch('https://paracel-tracking-system.onrender.com/api/User', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 

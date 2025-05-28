@@ -52,7 +52,7 @@ window.printQRCode = function(qrCodeData, trackingId, recipientName) {
                 '<img class="qr-code" src="data:image/png;base64,' + qrCodeData + '" alt="QR Code">' +
                 '<div class="tracking-id">Tracking ID: ' + trackingId + '</div>' +                '<div class="recipient">Recipient: ' + recipientName + '</div>' +                '<div class="instructions">' +
                     'Scan this QR code with your phone camera<br>' +
-                    'http://localhost:5500/shipment-tracking.html?tracking=' + trackingId +
+                    'https://raghavvag.github.io/parcel_tracking_frontend/shipment-tracking.html?tracking=' + trackingId +
                 '</div>'+
                 '<div class="print-date">Printed: ' + new Date().toLocaleString() + '</div>' +
             '</div>' +

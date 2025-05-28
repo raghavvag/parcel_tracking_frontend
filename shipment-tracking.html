@@ -478,7 +478,7 @@
                             sessionStorage.setItem('currentTrackingId', shipmentId);
                         } else {
                             // Fall back to regular endpoint if tracking endpoint fails
-                            const response = await fetch(`https://localhost:5001/api/Shipment/${shipmentId}`);
+                            const response = await fetch(`https://paracel-tracking-system.onrender.com/api/Shipment/${shipmentId}`);
                             if (!response.ok) {
                                 throw new Error('Failed to fetch shipment');
                             }
@@ -487,7 +487,7 @@
                         }
                     } else {
                         // Use regular endpoint for numeric IDs
-                        const response = await fetch(`https://localhost:5001/api/Shipment/${shipmentId}`);
+                        const response = await fetch(`https://paracel-tracking-system.onrender.com/api/Shipment/${shipmentId}`);
                         if (!response.ok) {
                             throw new Error('Failed to fetch shipment');
                         }
@@ -670,15 +670,15 @@
                 if (hasTrackingIdFormat) {
                     // IDs with tracking format always use the tracking endpoint
                     console.log('Using tracking ID endpoint for status update');
-                    endpoint = `https://localhost:5001/api/Shipment/tracking/${cleanId}/status`;
+                    endpoint = `https://paracel-tracking-system.onrender.com/api/Shipment/tracking/${cleanId}/status`;
                 } else if (storedTrackingId) {
                     // If we have a stored tracking ID, use that
                     console.log('Using stored tracking ID for status update');
-                    endpoint = `https://localhost:5001/api/Shipment/tracking/${storedTrackingId}/status`;
+                    endpoint = `https://paracel-tracking-system.onrender.com/api/Shipment/tracking/${storedTrackingId}/status`;
                 } else {
                     // Otherwise use regular shipment ID endpoint
                     console.log('Using shipment ID endpoint for status update');
-                    endpoint = `https://localhost:5001/api/Shipment/${cleanId}/status`;
+                    endpoint = `https://paracel-tracking-system.onrender.com/api/Shipment/${cleanId}/status`;
                 }
                 
                 // Log the final endpoint for debugging

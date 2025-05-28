@@ -4,10 +4,8 @@ document.getElementById('loginForm').addEventListener('submit', async function(e
     const password = document.getElementById('loginPassword').value;
     
     const messageDiv = document.getElementById('loginMessage');
-    messageDiv.textContent = '';
-
-    try {
-        const response = await fetch('https://localhost:5001/api/Login', {
+    messageDiv.textContent = '';    try {
+        const response = await fetch('https://paracel-tracking-system.onrender.com/api/Login', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email, password })
