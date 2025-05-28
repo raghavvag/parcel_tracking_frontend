@@ -64,9 +64,14 @@
                     const trackBtn = document.querySelector('.track-btn');
                     const originalBtnText = trackBtn.innerHTML;
                     trackBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Searching...';
-                    trackBtn.disabled = true;
-                      // Make API call to your backend with the tracking ID
-                    const response = await fetch(`https://localhost:5001/api/Shipment/tracking/${trackingNumber}`);
+                    trackBtn.disabled = true;                    // Make API call to your backend with the tracking ID
+                    // Determine if we're running on GitHub Pages or locally
+                    const isGitHubPages = window.location.hostname === "raghavvag.github.io";
+                    const apiBaseUrl = isGitHubPages 
+                        ? "https://your-deployed-backend-url.com" // Replace with your actual deployed backend URL
+                        : "https://localhost:5001";
+                    
+                    const response = await fetch(`${apiBaseUrl}/api/Shipment/tracking/${trackingNumber}`);
                     
                     // Reset button state
                     trackBtn.innerHTML = originalBtnText;

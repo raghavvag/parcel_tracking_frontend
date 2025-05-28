@@ -43,11 +43,16 @@ async function trackShipment(trackingId) {
                     cached: true
                 };
             }
-        }
-          console.log('Fetching shipment with tracking ID:', cleanTrackingId);
+        }        console.log('Fetching shipment with tracking ID:', cleanTrackingId);
+        
+        // Determine if we're running on GitHub Pages or locally
+        const isGitHubPages = window.location.hostname === "raghavvag.github.io";
+        const apiBaseUrl = isGitHubPages 
+            ? "https://your-deployed-backend-url.com" // Replace with your actual deployed backend URL
+            : "https://localhost:5001";
         
         // Always use the tracking endpoint for tracking IDs
-        const response = await fetch(`https://localhost:5001/api/Shipment/tracking/${cleanTrackingId}`);
+        const response = await fetch(`${apiBaseUrl}/api/Shipment/tracking/${cleanTrackingId}`);
         
         // Log full URL for debugging
         console.log(`Making API request to: https://localhost:5001/api/Shipment/tracking/${cleanTrackingId}`);
