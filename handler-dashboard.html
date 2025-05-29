@@ -232,10 +232,17 @@
         </div>
           <div id="updateStatusForm" class="update-form" style="display: none;">
             <h2>Update Shipment Status</h2>
-            <form id="statusUpdateForm">
-                <div class="form-group">
-                    <label for="trackingId">Shipment ID</label>
-                    <input type="text" id="trackingId" required>
+            <form id="statusUpdateForm">                <div class="form-group">
+                    <label for="trackingId">Shipment ID or Tracking ID</label>
+                    <div style="display: flex; gap: 10px;">
+                        <input type="text" id="trackingId" required style="flex-grow: 1;">
+                        <button type="button" id="lookupBtn" class="action-button" style="white-space: nowrap;">
+                            <i class="fas fa-search"></i> Lookup
+                        </button>
+                    </div>
+                    <div style="font-size: 12px; color: #666; margin-top: 5px;">
+                        <i class="fas fa-info-circle"></i> Enter either the numeric Shipment ID or the formatted Tracking ID (e.g., PT-2505-OKX4G0)
+                    </div>
                 </div>
                 <div class="form-group">
                     <label for="newStatus">New Status</label>
@@ -258,13 +265,22 @@
                     <label for="statusNotes">Special Instructions</label>
                     <textarea id="statusNotes" rows="2"></textarea>
                 </div>
-                
-                <!-- OTP verification section for Delivered status -->
+                  <!-- OTP verification section for Delivered status -->
                 <div id="otpVerificationSection" style="display: none;">
                     <div class="form-group">
-                        <label for="otpInput">Delivery OTP</label>
-                        <input type="text" id="otpInput" placeholder="Enter OTP provided by recipient" maxlength="6">
-                        <div id="otpError" style="color: red; display: none;">Invalid OTP. Please try again.</div>
+                        <label for="otpInput">Delivery OTP <span style="color: #ff6b6b;">*</span></label>
+                        <input type="text" id="otpInput" placeholder="Enter 6-digit OTP provided by recipient" maxlength="6" pattern="[0-9]{6}">
+                        <div id="otpError" style="color: red; display: none;">Invalid OTP. Please verify and try again.</div>
+                        <div class="otp-info">
+                            <i class="fas fa-info-circle"></i> 
+                            To mark as "Delivered", you must enter the 6-digit OTP that was sent to the recipient when the status was set to "Out for Delivery". This verifies that the package was delivered to the correct person.
+                        </div>
+                        <div style="background-color: #fff3cd; border-left: 4px solid #ffc107; padding: 8px; margin-top: 10px;">
+                            <p style="margin: 0; font-size: 13px; color: #856404;">
+                                <i class="fas fa-exclamation-triangle"></i> 
+                                Important: The OTP is only valid for 24 hours. If the OTP has expired, the recipient needs to contact customer support.
+                            </p>
+                        </div>
                     </div>
                 </div>
                 
@@ -401,7 +417,8 @@
             document.getElementById('trackingId').value = shipmentId;
         }
           // Function to update the dashboard statistics
-        async function updateDashboardStats() {            try {
+        async function updateDashboardStats() {            
+            try {
                 // Since there's no specific stats endpoint, we'll calculate from all shipments
                 const response = await fetch(`${API_ENDPOINT}/Shipment`);
                 if (!response.ok) {
@@ -447,11 +464,13 @@
             } catch (error) {
                 console.error('Error updating dashboard stats:', error);
             }
-        }        // Function to load all shipments 
+        }        
+        // Function to load all shipments 
         async function loadShipments() {
             const tableBody = document.getElementById('shipmentsTableBody');
             tableBody.innerHTML = '<tr><td colspan="8" style="text-align: center;">Loading shipments...</td></tr>';
-              try {
+              
+            try {
                 // Use the GET all shipments endpoint
                 const response = await fetch(`${API_ENDPOINT}/Shipment`);
                 if (!response.ok) {
@@ -553,6 +572,107 @@
             });
         }
 
+        // Function to handle status selection change
+        function handleStatusChange() {
+            const newStatus = document.getElementById('newStatus').value;
+            const otpSection = document.getElementById('otpVerificationSection');
+            
+            // Show OTP input field only when "Delivered" status is selected
+            if (newStatus === 'Delivered') {
+                otpSection.style.display = 'block';
+            } else {
+                otpSection.style.display = 'none';
+                // Hide error message if it was displayed
+                document.getElementById('otpError').style.display = 'none';
+            }
+        }
+            // Function to generate OTP when status is set to "Out for Delivery"
+        async function generateOTP(shipmentId) {
+            try {                
+                console.log('Generating OTP for shipment ID:', shipmentId);
+                
+                // Extract numeric shipment ID if a tracking ID was provided
+                let numericShipmentId = shipmentId;
+                
+                // Check if we have this shipment cached in sessionStorage to get the numeric ID
+                const cachedShipment = sessionStorage.getItem('lastTrackedShipment');
+                if (cachedShipment) {
+                    const shipment = JSON.parse(cachedShipment);
+                    // If tracking ID was provided, use the numeric ID instead
+                    if (shipment.trackingId === shipmentId) {
+                        numericShipmentId = shipment.id;
+                        console.log('Using numeric shipment ID from cache:', numericShipmentId);
+                    }
+                }
+                
+                // Use fetch API to generate OTP
+                const response = await fetch(`${API_ENDPOINT}/Shipment/otp/${numericShipmentId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                console.log('OTP generation response status:', response.status);
+                
+                if (!response.ok) {
+                    throw new Error('Failed to generate OTP');
+                }
+                
+                const result = await response.json();
+                console.log('OTP generated successfully');
+                return result;
+            } catch (error) {
+                console.error('Error generating OTP:', error);
+                return null;
+            }
+        }
+            // Function to verify OTP
+        async function verifyOTP(shipmentId, otpCode) {
+            try {                
+                console.log('Verifying OTP for shipment ID:', shipmentId, 'with OTP code:', otpCode);
+                
+                // Extract numeric shipment ID if a tracking ID was provided
+                let numericShipmentId = shipmentId;
+                
+                // Check if we have this shipment cached in sessionStorage to get the numeric ID
+                const cachedShipment = sessionStorage.getItem('lastTrackedShipment');
+                if (cachedShipment) {
+                    const shipment = JSON.parse(cachedShipment);
+                    // If tracking ID was provided, use the numeric ID instead
+                    if (shipment.trackingId === shipmentId) {
+                        numericShipmentId = shipment.id;
+                        console.log('Using numeric shipment ID from cache:', numericShipmentId);
+                    }
+                }
+                
+                const response = await fetch(`${API_ENDPOINT}/Shipment/otp/verify/${numericShipmentId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    // Properly format the OTP as an object with a code property
+                    body: JSON.stringify({
+                        code: otpCode
+                    })
+                });
+                
+                console.log('OTP verification response status:', response.status);
+                
+                if (!response.ok) {
+                    console.error('OTP verification failed with status:', response.status);
+                    return false;
+                }
+                
+                const result = await response.json();
+                console.log('OTP verification response:', result);
+                return true;
+            } catch (error) {
+                console.error('Error verifying OTP:', error);
+                return false;
+            }
+        }
+
         // Check if user is logged in
         document.addEventListener('DOMContentLoaded', function() {
             const currentUser = JSON.parse(localStorage.getItem('currentUser')) || {};
@@ -592,66 +712,7 @@
             document.getElementById('updateStatusBtn').addEventListener('click', function() {
                 const form = document.getElementById('updateStatusForm');
                 form.style.display = form.style.display === 'none' ? 'block' : 'none';
-            });
-                  // Function to handle status selection change
-        function handleStatusChange() {
-            const newStatus = document.getElementById('newStatus').value;
-            const otpSection = document.getElementById('otpVerificationSection');
-            
-            // Show OTP input field only when "Delivered" status is selected
-            if (newStatus === 'Delivered') {
-                otpSection.style.display = 'block';
-            } else {
-                otpSection.style.display = 'none';
-                // Hide error message if it was displayed
-                document.getElementById('otpError').style.display = 'none';
-            }
-        }
-          // Function to generate OTP when status is set to "Out for Delivery"
-        async function generateOTP(shipmentId) {
-            try {                const response = await fetch(`${API_ENDPOINT}/Shipment/otp/${shipmentId}`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    }
-                });
-                
-                if (!response.ok) {
-                    throw new Error('Failed to generate OTP');
-                }
-                
-                const result = await response.json();
-                return result;
-            } catch (error) {
-                console.error('Error generating OTP:', error);
-                return null;
-            }
-        }
-          // Function to verify OTP
-        async function verifyOTP(shipmentId, otpCode) {
-            try {                const response = await fetch(`${API_ENDPOINT}/Shipment/otp/verify/${shipmentId}`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        otp: otpCode
-                    })
-                });
-                
-                if (!response.ok) {
-                    return false;
-                }
-                
-                const result = await response.json();
-                return result.verified === true;
-            } catch (error) {
-                console.error('Error verifying OTP:', error);
-                return false;
-            }
-        }
-
-        // Handle status update form submission
+            });            // Handle status update form submission
             document.getElementById('statusUpdateForm').addEventListener('submit', async function(e) {
                 e.preventDefault();
                 
@@ -659,31 +720,66 @@
                 const newStatus = document.getElementById('newStatus').value;
                 
                 if (!shipmentId || !newStatus) {
-                    alert('Please provide both tracking ID and status.');
+                    alert('Please provide both shipment ID and status.');
                     return;
                 }
                 
                 try {
-                    // If the status is "Delivered", verify OTP first
+                    // Extract numeric shipment ID if a tracking ID was provided
+                    let numericShipmentId = shipmentId;
+                    
+                    // Check if we have this shipment cached in sessionStorage to get the numeric ID
+                    const cachedShipment = sessionStorage.getItem('lastTrackedShipment');
+                    if (cachedShipment) {
+                        const shipment = JSON.parse(cachedShipment);
+                        // If tracking ID was provided, use the numeric ID instead
+                        if (shipment.trackingId === shipmentId) {
+                            numericShipmentId = shipment.id;
+                            console.log('Using numeric shipment ID from cache:', numericShipmentId);
+                        }
+                    }
+                      // If the status is "Delivered", verify OTP first
                     if (newStatus === 'Delivered') {
-                        const otpCode = document.getElementById('otpInput').value.trim();
-                        if (!otpCode) {
+                        const otpCodeInput = document.getElementById('otpInput').value.trim();
+                        
+                        // Validate OTP is provided and is numeric
+                        if (!otpCodeInput) {
                             alert('Please enter the OTP provided by the recipient.');
                             return;
                         }
                         
-                        const isVerified = await verifyOTP(shipmentId, otpCode);
+                        if (!/^\d{6}$/.test(otpCodeInput)) {
+                            alert('OTP must be a 6-digit number.');
+                            return;
+                        }
+                        
+                        // Show verification in progress message
+                        document.getElementById('otpError').innerHTML = 'Verifying OTP...';
+                        document.getElementById('otpError').style.color = '#2196f3';
+                        document.getElementById('otpError').style.display = 'block';
+                        
+                        const isVerified = await verifyOTP(numericShipmentId, otpCodeInput);
+                        
                         if (!isVerified) {
+                            document.getElementById('otpError').innerHTML = 'Invalid OTP. Please verify and try again.';
+                            document.getElementById('otpError').style.color = '#ff0000';
                             document.getElementById('otpError').style.display = 'block';
                             return;
                         } else {
-                            document.getElementById('otpError').style.display = 'none';
+                            document.getElementById('otpError').innerHTML = 'OTP verified successfully!';
+                            document.getElementById('otpError').style.color = '#4caf50';
+                            document.getElementById('otpError').style.display = 'block';
+                            
+                            // Continue with status update after a short delay to show the success message
+                            await new Promise(resolve => setTimeout(resolve, 1000));
                         }
                     }
-                      // Get the current address if provided
+                    
+                    // Get the current address if provided
                     const currentAddress = document.getElementById('locationUpdate').value.trim();
-                      // Call the PATCH endpoint to update the status and current address
-                    const response = await fetch(`${API_ENDPOINT}/Shipment/${shipmentId}/status`, {
+                      
+                    // Call the PATCH endpoint to update the status and current address
+                    const response = await fetch(`${API_ENDPOINT}/Shipment/${numericShipmentId}/status`, {
                         method: 'PATCH',
                         headers: {
                             'Content-Type': 'application/json'
@@ -703,7 +799,7 @@
                     // If status is changed to "Out for Delivery", generate OTP
                     if (newStatus === 'Out for Delivery') {
                         const otpResult = await generateOTP(shipmentId);
-                        if (otpResult && otpResult.success) {
+                        if (otpResult) {
                             alert(`Shipment #${shipmentId} status updated to ${newStatus}. OTP has been generated and sent to the recipient.`);
                         } else {
                             alert(`Shipment #${shipmentId} status updated to ${newStatus}, but failed to generate OTP. The recipient may not receive the delivery code.`);
@@ -712,11 +808,15 @@
                         // Show regular success message for other status updates
                         alert(`Shipment #${shipmentId} status updated to ${newStatus}`);
                     }
-                    
-                    // Reset the form
-                    this.reset();
+                      // Reset the form and clear all fields
+                    document.getElementById('statusUpdateForm').reset();
                     document.getElementById('updateStatusForm').style.display = 'none';
                     document.getElementById('otpVerificationSection').style.display = 'none';
+                    document.getElementById('otpError').style.display = 'none';
+                    document.getElementById('otpInput').value = '';
+                    
+                    // Clear any cached session data to avoid confusion with future operations
+                    sessionStorage.removeItem('lastTrackedShipment');
                     
                     // Reload shipments to show the updated status
                     loadShipments();
@@ -733,10 +833,71 @@
                 localStorage.removeItem('currentUser');
                 window.location.href = 'index.html';
             });
-        });        // Make functions available globally
+        });
+          // Make functions available globally
         window.copyToClipboard = copyToClipboard;
         window.updateStatus = updateStatus;
         window.handleStatusChange = handleStatusChange;
+        window.populateShipmentData = populateShipmentData;
+        
+        // Function to populate form fields with shipment data
+        async function populateShipmentData() {
+            const shipmentId = document.getElementById('trackingId').value.trim();
+            if (!shipmentId) {
+                return;
+            }
+
+            try {
+                console.log('Looking up shipment data for ID:', shipmentId);
+                
+                // Try to fetch the shipment data
+                const response = await fetch(`${API_ENDPOINT}/Shipment/tracking/${shipmentId}`);
+                
+                if (!response.ok) {
+                    console.log('Shipment not found with tracking ID, trying with numeric ID');
+                    // If not found, try with numeric ID
+                    const numericResponse = await fetch(`${API_ENDPOINT}/Shipment/${shipmentId}`);
+                    
+                    if (!numericResponse.ok) {
+                        console.error('Failed to find shipment with ID:', shipmentId);
+                        return;
+                    }
+                    
+                    const shipment = await numericResponse.json();
+                    // Store in session for OTP verification and other operations
+                    sessionStorage.setItem('lastTrackedShipment', JSON.stringify(shipment));
+                    console.log('Shipment data found and cached:', shipment);
+                    
+                    // Show a notification to confirm lookup was successful
+                    const locationField = document.getElementById('locationUpdate');
+                    if (locationField && shipment.currentAddress) {
+                        locationField.value = shipment.currentAddress;
+                    }
+                    
+                    alert(`Shipment found: ${shipment.recipientName} - ${shipment.status}`);
+                } else {
+                    const shipment = await response.json();
+                    // Store in session for OTP verification and other operations
+                    sessionStorage.setItem('lastTrackedShipment', JSON.stringify(shipment));
+                    console.log('Shipment data found and cached:', shipment);
+                    
+                    // Show a notification to confirm lookup was successful
+                    const locationField = document.getElementById('locationUpdate');
+                    if (locationField && shipment.currentAddress) {
+                        locationField.value = shipment.currentAddress;
+                    }
+                    
+                    alert(`Shipment found: ${shipment.recipientName} - ${shipment.status}`);
+                }
+            } catch (error) {
+                console.error('Error looking up shipment:', error);
+            }
+        }
+        
+        // Add event listener for lookup button
+        document.getElementById('lookupBtn').addEventListener('click', function() {
+            populateShipmentData();
+        });
     </script>
 </body>
 </html>
