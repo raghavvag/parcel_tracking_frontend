@@ -6,7 +6,7 @@
     <title>Handler Dashboard</title>    
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <style>
+    <script src="apiConfig.js"></script><style>
         .dashboard-container {
             max-width: 1200px;
             margin: 0 auto;
@@ -19,6 +19,25 @@
             margin-bottom: 20px;
             padding-bottom: 10px;
             border-bottom: 1px solid #ddd;
+        }
+        /* OTP Verification Styles */
+        #otpVerificationSection {
+            margin-top: 15px;
+            padding: 15px;
+            background-color: #f5f5f5;
+            border-radius: 5px;
+            border-left: 4px solid #2196f3;
+        }
+        #otpInput {
+            letter-spacing: 5px;
+            font-size: 18px;
+            font-weight: bold;
+            text-align: center;
+        }
+        .otp-info {
+            margin-top: 5px;
+            font-size: 13px;
+            color: #666;
         }
         .user-info {
             display: flex;
@@ -211,8 +230,7 @@
                 <button class="action-button">Support</button>
             </div>
         </div>
-        
-        <div id="updateStatusForm" class="update-form" style="display: none;">
+          <div id="updateStatusForm" class="update-form" style="display: none;">
             <h2>Update Shipment Status</h2>
             <form id="statusUpdateForm">
                 <div class="form-group">
@@ -221,7 +239,7 @@
                 </div>
                 <div class="form-group">
                     <label for="newStatus">New Status</label>
-                    <select id="newStatus" required>
+                    <select id="newStatus" required onchange="handleStatusChange()">
                         <option value="">Select Status</option>
                         <option value="Pending">Pending</option>
                         <option value="Picked Up">Picked Up</option>
@@ -240,6 +258,16 @@
                     <label for="statusNotes">Special Instructions</label>
                     <textarea id="statusNotes" rows="2"></textarea>
                 </div>
+                
+                <!-- OTP verification section for Delivered status -->
+                <div id="otpVerificationSection" style="display: none;">
+                    <div class="form-group">
+                        <label for="otpInput">Delivery OTP</label>
+                        <input type="text" id="otpInput" placeholder="Enter OTP provided by recipient" maxlength="6">
+                        <div id="otpError" style="color: red; display: none;">Invalid OTP. Please try again.</div>
+                    </div>
+                </div>
+                
                 <button type="submit" class="submit-button">Update Status</button>
             </form>
         </div>
@@ -266,14 +294,17 @@
                 </tbody>
             </table>
         </div>
-    </div>
-
-    <script>
+    </div>    <script>
+        // API_BASE_URL is defined in apiConfig.js
+        // Add "/api" to the end for handler dashboard
+        // Use the API_BASE_URL from apiConfig.js
+        const API_ENDPOINT = `${API_BASE_URL}/api`;
+            
         // Define the helper functions outside the DOMContentLoaded event
         // Function to view details of a specific shipment
         async function viewShipmentDetails(shipmentId) {
             try {
-                const response = await fetch('https://paracel-tracking-system.onrender.com/api/Shipment/' + shipmentId);
+                const response = await fetch(`${API_ENDPOINT}/Shipment/${shipmentId}`);
                 if (!response.ok) {
                     throw new Error('Failed to get shipment details');
                 }
@@ -369,12 +400,10 @@
             form.style.display = 'block';
             document.getElementById('trackingId').value = shipmentId;
         }
-        
-        // Function to update the dashboard statistics
-        async function updateDashboardStats() {
-            try {
+          // Function to update the dashboard statistics
+        async function updateDashboardStats() {            try {
                 // Since there's no specific stats endpoint, we'll calculate from all shipments
-                const response = await fetch('https://paracel-tracking-system.onrender.com/api/Shipment');
+                const response = await fetch(`${API_ENDPOINT}/Shipment`);
                 if (!response.ok) {
                     throw new Error('Failed to fetch shipment data');
                 }
@@ -418,16 +447,13 @@
             } catch (error) {
                 console.error('Error updating dashboard stats:', error);
             }
-        }
-
-        // Function to load all shipments 
+        }        // Function to load all shipments 
         async function loadShipments() {
             const tableBody = document.getElementById('shipmentsTableBody');
             tableBody.innerHTML = '<tr><td colspan="8" style="text-align: center;">Loading shipments...</td></tr>';
-            
-            try {
+              try {
                 // Use the GET all shipments endpoint
-                const response = await fetch('https://paracel-tracking-system.onrender.com/api/Shipment');
+                const response = await fetch(`${API_ENDPOINT}/Shipment`);
                 if (!response.ok) {
                     throw new Error('Failed to fetch shipments');
                 }
@@ -567,8 +593,65 @@
                 const form = document.getElementById('updateStatusForm');
                 form.style.display = form.style.display === 'none' ? 'block' : 'none';
             });
+                  // Function to handle status selection change
+        function handleStatusChange() {
+            const newStatus = document.getElementById('newStatus').value;
+            const otpSection = document.getElementById('otpVerificationSection');
             
-            // Handle status update form submission
+            // Show OTP input field only when "Delivered" status is selected
+            if (newStatus === 'Delivered') {
+                otpSection.style.display = 'block';
+            } else {
+                otpSection.style.display = 'none';
+                // Hide error message if it was displayed
+                document.getElementById('otpError').style.display = 'none';
+            }
+        }
+          // Function to generate OTP when status is set to "Out for Delivery"
+        async function generateOTP(shipmentId) {
+            try {                const response = await fetch(`${API_ENDPOINT}/Shipment/otp/${shipmentId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Failed to generate OTP');
+                }
+                
+                const result = await response.json();
+                return result;
+            } catch (error) {
+                console.error('Error generating OTP:', error);
+                return null;
+            }
+        }
+          // Function to verify OTP
+        async function verifyOTP(shipmentId, otpCode) {
+            try {                const response = await fetch(`${API_ENDPOINT}/Shipment/otp/verify/${shipmentId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        otp: otpCode
+                    })
+                });
+                
+                if (!response.ok) {
+                    return false;
+                }
+                
+                const result = await response.json();
+                return result.verified === true;
+            } catch (error) {
+                console.error('Error verifying OTP:', error);
+                return false;
+            }
+        }
+
+        // Handle status update form submission
             document.getElementById('statusUpdateForm').addEventListener('submit', async function(e) {
                 e.preventDefault();
                 
@@ -581,11 +664,26 @@
                 }
                 
                 try {
-                    // Get the current address if provided
+                    // If the status is "Delivered", verify OTP first
+                    if (newStatus === 'Delivered') {
+                        const otpCode = document.getElementById('otpInput').value.trim();
+                        if (!otpCode) {
+                            alert('Please enter the OTP provided by the recipient.');
+                            return;
+                        }
+                        
+                        const isVerified = await verifyOTP(shipmentId, otpCode);
+                        if (!isVerified) {
+                            document.getElementById('otpError').style.display = 'block';
+                            return;
+                        } else {
+                            document.getElementById('otpError').style.display = 'none';
+                        }
+                    }
+                      // Get the current address if provided
                     const currentAddress = document.getElementById('locationUpdate').value.trim();
-                    
-                    // Call the PATCH endpoint to update the status and current address
-                    const response = await fetch(`https://paracel-tracking-system.onrender.com/api/Shipment/${shipmentId}/status`, {
+                      // Call the PATCH endpoint to update the status and current address
+                    const response = await fetch(`${API_ENDPOINT}/Shipment/${shipmentId}/status`, {
                         method: 'PATCH',
                         headers: {
                             'Content-Type': 'application/json'
@@ -602,12 +700,23 @@
                     
                     const updatedShipment = await response.json();
                     
-                    // Show success message
-                    alert(`Shipment #${shipmentId} status updated to ${newStatus}`);
+                    // If status is changed to "Out for Delivery", generate OTP
+                    if (newStatus === 'Out for Delivery') {
+                        const otpResult = await generateOTP(shipmentId);
+                        if (otpResult && otpResult.success) {
+                            alert(`Shipment #${shipmentId} status updated to ${newStatus}. OTP has been generated and sent to the recipient.`);
+                        } else {
+                            alert(`Shipment #${shipmentId} status updated to ${newStatus}, but failed to generate OTP. The recipient may not receive the delivery code.`);
+                        }
+                    } else {
+                        // Show regular success message for other status updates
+                        alert(`Shipment #${shipmentId} status updated to ${newStatus}`);
+                    }
                     
                     // Reset the form
                     this.reset();
                     document.getElementById('updateStatusForm').style.display = 'none';
+                    document.getElementById('otpVerificationSection').style.display = 'none';
                     
                     // Reload shipments to show the updated status
                     loadShipments();
@@ -624,11 +733,10 @@
                 localStorage.removeItem('currentUser');
                 window.location.href = 'index.html';
             });
-        });
-
-        // Make copyToClipboard available globally
+        });        // Make functions available globally
         window.copyToClipboard = copyToClipboard;
         window.updateStatus = updateStatus;
+        window.handleStatusChange = handleStatusChange;
     </script>
 </body>
 </html>

@@ -6,6 +6,7 @@
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="dark-theme-fixes.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="apiConfig.js"></script>
 </head>
 <body>
     <div class="hero-section">
@@ -65,10 +66,9 @@
                     const originalBtnText = trackBtn.innerHTML;
                     trackBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Searching...';
                     trackBtn.disabled = true;                    // Make API call to your backend with the tracking ID
-                    // Determine if we're running on GitHub Pages or locally
-                    const isGitHubPages = window.location.hostname === "raghavvag.github.io";                    const apiBaseUrl = isGitHubPages 
-                        ? "https://paracel-tracking-system.onrender.com" // Deployed backend URL
-                        : "https://paracel-tracking-system.onrender.com";
+                    // API_BASE_URL is defined in apiConfig.js
+                    const apiBaseUrl = window.API_BASE_URL;
+                    console.log('Using API base URL:', apiBaseUrl); // Debug log to check the value
                     
                     const response = await fetch(`${apiBaseUrl}/api/Shipment/tracking/${trackingNumber}`);
                     

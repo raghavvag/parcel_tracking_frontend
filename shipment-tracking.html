@@ -4,10 +4,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Shipment Tracking</title>    <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="dark-theme-fixes.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <script src="data-mapper.js" defer></script>
-    <script src="tracking-utils.js" defer></script>
-    <script src="tracking.js" defer></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">    <!-- Load API config without defer to ensure it's available immediately -->
+    <script src="apiConfig.js"></script>
+    <!-- Load other scripts after API config is loaded -->
+    <script src="data-mapper.js"></script>
+    <script src="tracking-utils.js"></script>
+    <script src="tracking.js"></script>
     <style>
         .tracking-container {
             max-width: 800px;
@@ -478,7 +480,7 @@
                             sessionStorage.setItem('currentTrackingId', shipmentId);
                         } else {
                             // Fall back to regular endpoint if tracking endpoint fails
-                            const response = await fetch(`https://paracel-tracking-system.onrender.com/api/Shipment/${shipmentId}`);
+                            const response = await fetch(`${API_BASE_URL}/api/Shipment/${shipmentId}`);
                             if (!response.ok) {
                                 throw new Error('Failed to fetch shipment');
                             }
@@ -487,7 +489,7 @@
                         }
                     } else {
                         // Use regular endpoint for numeric IDs
-                        const response = await fetch(`https://paracel-tracking-system.onrender.com/api/Shipment/${shipmentId}`);
+                        const response = await fetch(`${API_BASE_URL}/api/Shipment/${shipmentId}`);
                         if (!response.ok) {
                             throw new Error('Failed to fetch shipment');
                         }
@@ -656,33 +658,31 @@
                 
                 // Prefer the stored IDs since those were used successfully to fetch the data
                 const idToUse = shipmentId || storedTrackingId || storedShipmentId;
-                
-                // Clean up ID to remove any URL parts (especially important for QR code paths)
+                  // Clean up ID to remove any URL parts (especially important for QR code paths)
                 const cleanId = idToUse.includes('/') ? idToUse.split('/').pop() : idToUse;
                 
                 console.log('Updating status using ID:', cleanId);
-                  // Always use the tracking endpoint for tracking-style IDs (PT-XXXX-XXXXX format)
-                const hasTrackingIdFormat = cleanId && cleanId.match(/^[A-Z]{2}-\d{4}-[A-Z0-9]{5,6}$/);
                 
-                // Always prefer the tracking endpoint if the ID looks like a tracking ID
-                let endpoint;
+                // IMPORTANT: Always treat PT-XXXX-XXXXX format IDs as shipment IDs for status updates
+                // This is critical because the status update endpoint needs the numeric shipment ID
+                let numericShipmentId = cleanId;
                 
-                if (hasTrackingIdFormat) {
-                    // IDs with tracking format always use the tracking endpoint
-                    console.log('Using tracking ID endpoint for status update');
-                    endpoint = `https://paracel-tracking-system.onrender.com/api/Shipment/tracking/${cleanId}/status`;
-                } else if (storedTrackingId) {
-                    // If we have a stored tracking ID, use that
-                    console.log('Using stored tracking ID for status update');
-                    endpoint = `https://paracel-tracking-system.onrender.com/api/Shipment/tracking/${storedTrackingId}/status`;
-                } else {
-                    // Otherwise use regular shipment ID endpoint
-                    console.log('Using shipment ID endpoint for status update');
-                    endpoint = `https://paracel-tracking-system.onrender.com/api/Shipment/${cleanId}/status`;
+                // If this is a tracking ID format, we need to get the actual shipment ID 
+                // from the cached shipment data if available
+                if (cleanId.match(/^[A-Z]{2}-\d{4}-[A-Z0-9]{5,6}$/)) {
+                    console.log('ID has tracking format, checking for numeric shipment ID in cached data');
+                    const cachedShipment = sessionStorage.getItem('lastTrackedShipment') ? 
+                        JSON.parse(sessionStorage.getItem('lastTrackedShipment')) : null;
+                        
+                    if (cachedShipment && cachedShipment.id) {
+                        numericShipmentId = cachedShipment.id;
+                        console.log('Using numeric shipment ID from cached data:', numericShipmentId);
+                    }
                 }
                 
-                // Log the final endpoint for debugging
-                console.log('Final status update endpoint:', endpoint);
+                // Use the correct endpoint for status updates as per the controller
+                const endpoint = `${API_BASE_URL}/api/Shipment/${numericShipmentId}/status`;
+                console.log('Using API endpoint for status update:', endpoint);
                 
                 // Prepare the request body with both status and current address
                 const requestBody = {
@@ -704,6 +704,41 @@
                 }
                 
                 const updatedShipment = await response.json();
+                  // Generate OTP if status is "Out for Delivery"
+                if (newStatus === 'Out for Delivery') {
+                    try {
+                        console.log('Generating OTP for Out for Delivery status');
+                        const otpResponse = await fetch(`${API_BASE_URL}/api/Shipment/otp/${numericShipmentId}`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+                            }
+                        });
+                        
+                        if (otpResponse.ok) {
+                            const otpResult = await otpResponse.json();
+                            console.log('OTP generated successfully');
+                            
+                            // Show OTP generation success message
+                            const otpSuccessMsg = document.createElement('div');
+                            otpSuccessMsg.className = 'otp-update-success';
+                            otpSuccessMsg.textContent = `OTP generated for delivery verification.`;
+                            otpSuccessMsg.style.backgroundColor = 'rgba(33, 150, 243, 0.2)';
+                            otpSuccessMsg.style.color = '#2196f3';
+                            otpSuccessMsg.style.padding = '10px';
+                            otpSuccessMsg.style.marginTop = '10px';
+                            otpSuccessMsg.style.borderRadius = '4px';
+                            otpSuccessMsg.style.borderLeft = '3px solid #2196f3';
+                            
+                            document.getElementById('status-update-section').appendChild(otpSuccessMsg);
+                        } else {
+                            console.error('Failed to generate OTP');
+                        }
+                    } catch (otpError) {
+                        console.error('Error generating OTP:', otpError);
+                    }
+                }
                 
                 // Update the cached shipment if it exists
                 if (sessionStorage.getItem('lastTrackedShipment')) {

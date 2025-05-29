@@ -2,6 +2,9 @@
  * Tracking functionality for parcel tracking system
  */
 
+// Using deployed API endpoint only
+console.log('Tracking.js loaded. Using deployed API endpoint');
+
 // Function to track a shipment by tracking ID
 async function trackShipment(trackingId) {
     try {
@@ -43,12 +46,10 @@ async function trackShipment(trackingId) {
                     cached: true
                 };
             }
-        }        console.log('Fetching shipment with tracking ID:', cleanTrackingId);
-          // Determine if we're running on GitHub Pages or locally
-        const isGitHubPages = window.location.hostname === "raghavvag.github.io";
-        const apiBaseUrl = isGitHubPages 
-            ? "https://paracel-tracking-system.onrender.com" // Deployed backend URL
-            : "https://paracel-tracking-system.onrender.com";
+        }        console.log('Fetching shipment with tracking ID:', cleanTrackingId);        
+        // Use the API_BASE_URL from apiConfig.js
+        const apiBaseUrl = window.API_BASE_URL || "https://paracel-tracking-system.onrender.com";
+        console.log('Using API base URL:', apiBaseUrl);
         
         // Always use the tracking endpoint for tracking IDs
         const response = await fetch(`${apiBaseUrl}/api/Shipment/tracking/${cleanTrackingId}`);

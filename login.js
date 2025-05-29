@@ -1,3 +1,5 @@
+// API_BASE_URL is defined in apiConfig.js
+
 document.getElementById('loginForm').addEventListener('submit', async function(e) {
     e.preventDefault();
     const email = document.getElementById('loginEmail').value;
@@ -5,7 +7,7 @@ document.getElementById('loginForm').addEventListener('submit', async function(e
     
     const messageDiv = document.getElementById('loginMessage');
     messageDiv.textContent = '';    try {
-        const response = await fetch('https://paracel-tracking-system.onrender.com/api/Login', {
+        const response = await fetch(`${API_BASE_URL}/api/Login`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email, password })
