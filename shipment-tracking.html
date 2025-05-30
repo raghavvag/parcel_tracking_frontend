@@ -393,9 +393,11 @@
                   <button id="update-status-btn">Update Status</button>
             </div>
         </div>
-        
-        <a href="javascript:history.back()" class="back-button">Back</a>
-    </div>    <script>        document.addEventListener('DOMContentLoaded', async function() {
+          <a href="javascript:history.back()" class="back-button">Back</a>
+    </div>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', async function() {
             // Get shipment ID from URL - handle multiple URL formats
             const urlParams = new URLSearchParams(window.location.search);
             let shipmentId = urlParams.get('id');
@@ -568,10 +570,11 @@
                         }
                         shipment = await response.json();
                         sessionStorage.setItem('currentShipmentId', shipmentId);
-                    }
-                } else {
+                    }                } else {
                     throw new Error('No tracking or shipment ID provided');
-                }// Log the shipment data we received for debugging
+                }
+                
+                // Log the shipment data we received for debugging
                 console.log('Shipment data to display:', shipment);
                 
                 // Populate the tracking page with shipment details using our new function
@@ -617,7 +620,10 @@
                         getStatusDescription(status),
                         shipment.currentAddress || null
                     );
-                }                // Set up status update functionality only if it's visible                if (document.getElementById('status-update-section').style.display !== 'none') {
+                }
+                
+                // Set up status update functionality only if it's visible
+                if (document.getElementById('status-update-section').style.display !== 'none') {
                     // Set initial values based on current shipment data
                     document.getElementById('status-select').value = shipment.status || 'Pending';
                     
@@ -630,13 +636,14 @@
                             otpSection.style.cssText = "display: block !important;";
                             otpSection.style.display = 'block';
                             otpSection.removeAttribute('hidden');
-                        }
-                    }
+                        }                    }
                     
                     // If we have current address, pre-fill the input
                     if (shipment.currentAddress && shipment.currentAddress !== 'In Transit' && shipment.currentAddress !== 'N/A') {
                         document.getElementById('current-address-input').value = shipment.currentAddress;
-                    }document.getElementById('update-status-btn').addEventListener('click', async () => {
+                    }
+                    
+                    document.getElementById('update-status-btn').addEventListener('click', async () => {
                         try {
                             const newStatus = document.getElementById('status-select').value;
                             const btn = document.getElementById('update-status-btn');
@@ -723,13 +730,12 @@
                             console.error('Failed to update status:', error);
                             alert('Failed to update status. Please try again.');
                             
-                            // Reset button on error
-                            btn.textContent = originalBtnText;
+                            // Reset button on error                            btn.textContent = originalBtnText;
                             btn.disabled = false;
                         }
                     });
                 }
-                  } catch (error) {
+            } catch (error) {
                 console.error('Error fetching shipment details:', error);
                 
                 // Instead of alert, show error on page
@@ -753,13 +759,13 @@
                             <li>The shipment has not been processed yet</li>
                             <li>A temporary server issue</li>
                         </ul>
-                        <p>Please verify your tracking number and try again, or contact support if the issue persists.</p>
-                        <a href="index.html" class="back-button" style="display: inline-block; margin-top: 10px;">Go Back to Tracking</a>
+                        <p>Please verify your tracking number and try again, or contact support if the issue persists.</p>                        <a href="index.html" class="back-button" style="display: inline-block; margin-top: 10px;">Go Back to Tracking</a>
                     </div>
                 `;
             }
         });
-          // Helper function to add timeline events to the container
+        
+        // Helper function to add timeline events to the container
         function addTimelineEvent(container, status, date, description, location = null) {
             const timelineItem = document.createElement('div');
             timelineItem.className = 'timeline-item';
@@ -793,9 +799,10 @@
                 'Returned': 'The shipment has been returned to the sender.',
                 'Cancelled': 'The shipment has been cancelled.'
             };
-            
-            return descriptions[status] || 'Status update received.';
-        }        // Update shipment status function
+              return descriptions[status] || 'Status update received.';
+        }
+        
+        // Update shipment status function
         async function updateShipmentStatus(shipmentId, newStatus) {
             try {
                 // Get current address if provided
@@ -999,12 +1006,14 @@
                 // If we got here, the response was OK, so return success
                 return true;
             } catch (error) {
-                console.error('Error verifying OTP:', error);
-                return false;
+                console.error('Error verifying OTP:', error);                return false;
             }
         }
-          // Use the showOTPSectionIfDelivered function from otp-handler.js
-    </script>    <script>
+        
+        // Use the showOTPSectionIfDelivered function from otp-handler.js
+    </script>
+    
+    <script>
         // Initialize the OTP verification functionality when the document is loaded
         document.addEventListener('DOMContentLoaded', function() {
             console.log('Initializing OTP verification for shipment tracking page');
