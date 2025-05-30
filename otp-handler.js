@@ -6,7 +6,8 @@
 // Function to handle status change and show/hide OTP section
 function showOTPSectionIfDelivered() {
     console.log('Checking if status is Delivered to show OTP section');
-    const statusSelect = document.getElementById('newStatus');
+    // Check for both the handler dashboard and tracking page select elements
+    const statusSelect = document.getElementById('newStatus') || document.getElementById('status-select');
     const otpSection = document.getElementById('otpVerificationSection');
     
     if (statusSelect && otpSection) {
