@@ -3,10 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Handler Dashboard</title>    
-    <link rel="stylesheet" href="styles.css">
+    <title>Handler Dashboard</title>      <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <script src="apiConfig.js"></script><style>
+    <script src="apiConfig.js"></script>
+    <script src="otp-handler.js"></script>
+    <style>        /* Flash animation for OTP section */
+        @keyframes flash-highlight {
+            0% { box-shadow: 0 0 5px 2px rgba(76, 175, 80, 0.3); background-color: #f7f7f7; }
+            50% { box-shadow: 0 0 15px 7px rgba(76, 175, 80, 0.7); background-color: #e3f2fd; }
+            100% { box-shadow: 0 0 5px 2px rgba(76, 175, 80, 0.3); background-color: #f7f7f7; }
+        }
+    
         .dashboard-container {
             max-width: 1200px;
             margin: 0 auto;
@@ -20,13 +27,13 @@
             padding-bottom: 10px;
             border-bottom: 1px solid #ddd;
         }
-        /* OTP Verification Styles */
-        #otpVerificationSection {
+        /* OTP Verification Styles */        #otpVerificationSection {
             margin-top: 15px;
             padding: 15px;
             background-color: #f5f5f5;
             border-radius: 5px;
             border-left: 4px solid #2196f3;
+            animation: flash-highlight 1.5s ease-in-out;
         }
         #otpInput {
             letter-spacing: 5px;
@@ -243,10 +250,9 @@
                     <div style="font-size: 12px; color: #666; margin-top: 5px;">
                         <i class="fas fa-info-circle"></i> Enter either the numeric Shipment ID or the formatted Tracking ID (e.g., PT-2505-OKX4G0)
                     </div>
-                </div>
-                <div class="form-group">
+                </div>        <div class="form-group">
                     <label for="newStatus">New Status</label>
-                    <select id="newStatus" required onchange="handleStatusChange()">
+                    <select id="newStatus" required>
                         <option value="">Select Status</option>
                         <option value="Pending">Pending</option>
                         <option value="Picked Up">Picked Up</option>
@@ -256,6 +262,12 @@
                         <option value="Failed Delivery">Failed Delivery</option>
                         <option value="Returned">Returned to Sender</option>
                     </select>
+                    <!-- Quick action button to mark as delivered -->
+                    <div style="margin-top: 10px">
+                        <button type="button" id="markDeliveredBtn" class="action-button" style="background-color: #4caf50;">
+                            <i class="fas fa-check-circle"></i> Mark as Delivered & Show OTP
+                        </button>
+                    </div>
                 </div>
                 <div class="form-group">
                     <label for="locationUpdate">Current Location</label>
@@ -264,15 +276,18 @@
                 <div class="form-group">
                     <label for="statusNotes">Special Instructions</label>
                     <textarea id="statusNotes" rows="2"></textarea>
-                </div>
-                  <!-- OTP verification section for Delivered status -->
-                <div id="otpVerificationSection" style="display: none;">
+                </div>                <!-- OTP verification section for Delivered status -->
+                <div id="otpVerificationSection" style="display: none; border: 2px solid #4CAF50; padding: 15px; margin-top: 15px; border-radius: 5px; background-color: #f7f7f7; box-shadow: 0 0 10px rgba(76, 175, 80, 0.5);">
+                    <h4 style="margin-top: 0; color: #4CAF50; display: flex; align-items: center;">
+                        <i class="fas fa-shield-alt" style="margin-right: 8px;"></i> 
+                        OTP Verification Required
+                    </h4>
                     <div class="form-group">
                         <label for="otpInput">Delivery OTP <span style="color: #ff6b6b;">*</span></label>
-                        <input type="text" id="otpInput" placeholder="Enter 6-digit OTP provided by recipient" maxlength="6" pattern="[0-9]{6}">
-                        <div id="otpError" style="color: red; display: none;">Invalid OTP. Please verify and try again.</div>
-                        <div class="otp-info">
-                            <i class="fas fa-info-circle"></i> 
+                        <input type="text" id="otpInput" placeholder="Enter 6-digit OTP provided by recipient" maxlength="6" pattern="[0-9]{6}" style="letter-spacing: 5px; text-align: center; font-size: 20px; font-weight: bold;">
+                        <div id="otpError" style="color: red; display: none; padding: 5px; margin-top: 5px; text-align: center; font-weight: bold;">Invalid OTP. Please verify and try again.</div>
+                        <div class="otp-info" style="margin-top: 10px; background-color: #e8f5e9; padding: 10px; border-radius: 4px;">
+                            <i class="fas fa-info-circle" style="color: #4CAF50;"></i> 
                             To mark as "Delivered", you must enter the 6-digit OTP that was sent to the recipient when the status was set to "Out for Delivery". This verifies that the package was delivered to the correct person.
                         </div>
                         <div style="background-color: #fff3cd; border-left: 4px solid #ffc107; padding: 8px; margin-top: 10px;">
@@ -309,6 +324,12 @@
                     </tr>
                 </tbody>
             </table>
+        </div>
+        
+        <!-- Debug section to toggle OTP visibility - REMOVE IN PRODUCTION -->
+        <div style="margin-bottom: 15px; padding: 10px; background-color: #e9f5e9; border-left: 3px solid #4CAF50; display: flex; align-items: center;">
+            <span style="flex-grow: 1;">Debug: Toggle OTP Section Visibility</span>
+            <button type="button" id="toggleOtpBtn" style="background: #4CAF50; color: white; border: none; padding: 5px 10px; cursor: pointer; border-radius: 3px;">Show OTP Section</button>
         </div>
     </div>    <script>
         // API_BASE_URL is defined in apiConfig.js
@@ -408,13 +429,21 @@
                 alert('Error viewing details for shipment #' + shipmentId + '. Please try again.');
             }
         }
-        
-        // Helper function to update status from details view
+          // Helper function to update status from details view
         function updateStatus(shipmentId) {
             document.getElementById('detailsOverlay').style.display = 'none';
             const form = document.getElementById('updateStatusForm');
             form.style.display = 'block';
             document.getElementById('trackingId').value = shipmentId;
+            
+            // Check if status is already set to Delivered and show OTP section
+            setTimeout(function() {
+                const statusSelect = document.getElementById('newStatus');
+                if (statusSelect && statusSelect.value === 'Delivered') {
+                    console.log('updateStatus: Status is Delivered, showing OTP section');
+                    document.getElementById('otpVerificationSection').style.display = 'block';
+                }
+            }, 100);
         }
           // Function to update the dashboard statistics
         async function updateDashboardStats() {            
@@ -570,20 +599,65 @@
                 
                 document.body.removeChild(textarea);
             });
-        }
-
-        // Function to handle status selection change
+        }        // Function to handle status selection change
         function handleStatusChange() {
+            console.log('handleStatusChange called');
             const newStatus = document.getElementById('newStatus').value;
             const otpSection = document.getElementById('otpVerificationSection');
             
-            // Show OTP input field only when "Delivered" status is selected
-            if (newStatus === 'Delivered') {
-                otpSection.style.display = 'block';
-            } else {
-                otpSection.style.display = 'none';
-                // Hide error message if it was displayed
-                document.getElementById('otpError').style.display = 'none';
+            console.log('Status changed to:', newStatus);
+            console.log('OTP section element:', otpSection);
+            
+            try {
+                // Direct DOM update - force display style
+                if (newStatus === 'Delivered') {
+                    console.log('Setting OTP section display to block');
+                    
+                    // Ensure the OTP section is visible with multiple approaches
+                    otpSection.style.cssText = "display: block !important; border: 2px solid #4CAF50; padding: 15px; margin-top: 15px; border-radius: 5px; background-color: #f7f7f7;";
+                    
+                    // Also set directly
+                    otpSection.style.display = 'block';
+                    
+                    // Remove any hidden attribute
+                    otpSection.removeAttribute('hidden');
+                    
+                    // Add animation class
+                    otpSection.classList.add('animated');
+                    
+                    // Focus the OTP input field for better UX
+                    setTimeout(() => {
+                        const otpInput = document.getElementById('otpInput');
+                        if (otpInput) {
+                            otpInput.focus();
+                        }
+                    }, 300);
+                    
+                    // Log the resulting style
+                    console.log('OTP section display now:', otpSection.style.display);
+                    
+                    // Alert for debugging
+                    console.log('OTP section should now be visible');
+                    
+                    // Update the toggle button text if it exists
+                    const toggleBtn = document.getElementById('toggleOtpBtn');
+                    if (toggleBtn) {
+                        toggleBtn.textContent = 'Hide OTP Section';
+                    }
+                } else {
+                    console.log('Setting OTP section display to none');
+                    otpSection.style.display = 'none';
+                    // Hide error message if it was displayed
+                    document.getElementById('otpError').style.display = 'none';
+                    
+                    // Update the toggle button text if it exists
+                    const toggleBtn = document.getElementById('toggleOtpBtn');
+                    if (toggleBtn) {
+                        toggleBtn.textContent = 'Show OTP Section';
+                    }
+                }
+            } catch (error) {
+                console.error('Error in handleStatusChange:', error);
             }
         }
             // Function to generate OTP when status is set to "Out for Delivery"
@@ -644,28 +718,46 @@
                         numericShipmentId = shipment.id;
                         console.log('Using numeric shipment ID from cache:', numericShipmentId);
                     }
-                }
+                }                // The .NET Core backend is expecting a JSON serialized string, not a raw string with quotes
+                // We need to use JSON.stringify to properly format the OTP code
                 
+                // Make the fetch request with proper JSON serialization
                 const response = await fetch(`${API_ENDPOINT}/Shipment/otp/verify/${numericShipmentId}`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    // Properly format the OTP as an object with a code property
-                    body: JSON.stringify({
-                        code: otpCode
-                    })
+                    // Use JSON.stringify to properly format the OTP code as JSON
+                    body: JSON.stringify(otpCode)
                 });
                 
-                console.log('OTP verification response status:', response.status);
-                
-                if (!response.ok) {
+                console.log('OTP verification response status:', response.status);                if (!response.ok) {
                     console.error('OTP verification failed with status:', response.status);
-                    return false;
+                    
+                    // Try to get detailed error info
+                    try {
+                        const errorText = await response.text();
+                        console.error('Error response text:', errorText);
+                        
+                        try {
+                            // Try to parse as JSON if possible
+                            const errorData = JSON.parse(errorText);
+                            console.error('Error details:', errorData);
+                        } catch (parseError) {
+                            // If not valid JSON, we already logged the text version
+                            console.error('Response is not valid JSON');
+                        }
+                    } catch (textError) {
+                        // If we can't even get the text
+                        console.error('Error response:', response.statusText);
+                    }
+                      return false;
                 }
                 
-                const result = await response.json();
-                console.log('OTP verification response:', result);
+                // Get the response as text since backend returns plain text not JSON
+                const responseText = await response.text();
+                console.log('OTP verification response:', responseText);
+                // If we got here, the response was OK, so return success
                 return true;
             } catch (error) {
                 console.error('Error verifying OTP:', error);
@@ -706,13 +798,45 @@
                 
                 // Update dashboard stats
                 updateDashboardStats();
-            }
-            
-            // Toggle update status form
+            }            // Toggle update status form
             document.getElementById('updateStatusBtn').addEventListener('click', function() {
                 const form = document.getElementById('updateStatusForm');
                 form.style.display = form.style.display === 'none' ? 'block' : 'none';
-            });            // Handle status update form submission
+                
+                // Check status value when form becomes visible
+                if (form.style.display === 'block') {
+                    console.log('Form became visible, checking status value');
+                    setTimeout(function() {
+                        const statusSelect = document.getElementById('newStatus');
+                        if (statusSelect && statusSelect.value === 'Delivered') {
+                            console.log('Status is Delivered on form show, showing OTP section');
+                            document.getElementById('otpVerificationSection').style.display = 'block';
+                        }
+                    }, 100); // Small delay to ensure DOM is ready
+                }
+            });
+              // Ensure status dropdown has event listener
+            const statusSelect = document.getElementById('newStatus');
+            if (statusSelect) {
+                console.log('Setting up event listener for status select');
+                // Add event listener that calls both functions
+                statusSelect.addEventListener('change', function(e) {
+                    console.log('Status select changed via event listener to:', e.target.value);
+                    handleStatusChange();
+                    showOTPSectionIfDelivered();
+                });
+                
+                // Add direct click handler for the mark as delivered button
+                const deliveredBtn = document.getElementById('markDeliveredBtn');
+                if (deliveredBtn) {
+                    deliveredBtn.addEventListener('click', function() {
+                        console.log('Mark as delivered button clicked');
+                        markAsDelivered();
+                    });
+                }
+            } else {
+                console.error('Could not find newStatus element');
+            }// Handle status update form submission
             document.getElementById('statusUpdateForm').addEventListener('submit', async function(e) {
                 e.preventDefault();
                 
@@ -833,6 +957,19 @@
                 localStorage.removeItem('currentUser');
                 window.location.href = 'index.html';
             });
+            
+            // Debug button to toggle OTP section visibility - REMOVE IN PRODUCTION
+            document.getElementById('toggleOtpBtn').addEventListener('click', function() {
+                const otpSection = document.getElementById('otpVerificationSection');
+                if (otpSection.style.display === 'none' || otpSection.style.display === '') {
+                    otpSection.style.display = 'block';
+                    this.textContent = 'Hide OTP Section';
+                } else {
+                    otpSection.style.display = 'none';
+                    this.textContent = 'Show OTP Section';
+                }
+                console.log('OTP section visibility toggled manually. Current display:', otpSection.style.display);
+            });
         });
           // Make functions available globally
         window.copyToClipboard = copyToClipboard;
@@ -897,6 +1034,40 @@
         // Add event listener for lookup button
         document.getElementById('lookupBtn').addEventListener('click', function() {
             populateShipmentData();
+        });
+          // Function to monitor the status select and ensure OTP section visibility
+        function monitorStatusSelect() {
+            console.log('Status monitor checking...');
+            const statusSelect = document.getElementById('newStatus');
+            const otpSection = document.getElementById('otpVerificationSection');
+            
+            if (statusSelect && otpSection) {
+                if (statusSelect.value === 'Delivered' && otpSection.style.display === 'none') {
+                    console.log('Monitor detected Delivered status with hidden OTP section - fixing');
+                    otpSection.style.display = 'block';
+                    
+                    // Focus the OTP input field
+                    const otpInput = document.getElementById('otpInput');
+                    if (otpInput) {
+                        setTimeout(() => otpInput.focus(), 200);
+                    }
+                }
+            }
+        }
+
+        // Set up additional initialization once the DOM is completely loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            // Run once on load
+            setTimeout(monitorStatusSelect, 500);
+            
+            // Monitor for changes every second
+            setInterval(monitorStatusSelect, 1000);
+            
+            // Set up direct click handling for the Delivered option
+            setupDirectDeliveryClick();
+            
+            // Check if status is already set to Delivered on page load
+            showOTPSectionIfDelivered();
         });
     </script>
 </body>
